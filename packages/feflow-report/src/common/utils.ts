@@ -129,7 +129,9 @@ export const getKeyFormFile = (file: string, key: string): any => {
     const jsonData = JSON.parse(jsonString);
     return jsonData[key];
   } catch (e) {
-    console.log('getKeyFormCache error =>', e);
+    // 内部错误不应该主动抛出
+    // TODO 可以将异常写入fef的执行日志
+    // console.log('getKeyFormCache error =>', e);
   }
 };
 
@@ -140,6 +142,6 @@ export const setKeyToFile = (file: string, key: string, value: any): any => {
     jsonData[key] = value;
     fs.writeFileSync(file, JSON.stringify(jsonData, null, 4), 'utf-8');
   } catch (e) {
-    console.log('setKeyToCache error =>', e);
+    // console.log('setKeyToCache error =>', e);
   }
 };

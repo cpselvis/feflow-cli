@@ -71,7 +71,7 @@ export class FefError {
     } else {
       // 兼容多语言插件
       msg = `${msg} 请查看文档获取更多内容：${chalk.green(docs)}`;
-      this.context.logger.info(msg);
+      this.context.logger.debug(msg);
     }
   }
 
@@ -89,7 +89,7 @@ export class FefError {
       }
     }
 
-    if (!existsSync(pluginPath)) {
+    if (!pluginPath || !existsSync(pluginPath)) {
       return docs;
     }
     if (type === COMMAND_TYPE.PLUGIN_TYPE) {

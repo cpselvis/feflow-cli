@@ -10,8 +10,8 @@ import {
 } from '../../shared/constant';
 import Binp from '../universal-pkg/binp';
 import Commander from '../commander';
-import { CommandPickConfig, COMMAND_TYPE } from "../command-picker";
-import { escape } from '../../shared/args';
+import CommandPickConfig from '../command-picker/pickConfig';
+import { COMMAND_TYPE } from "../command-picker";import { escape } from '../../shared/args';
 
 const toolRegex = /^feflow-(?:devkit|plugin)-(.*)/i;
 

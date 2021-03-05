@@ -25,7 +25,7 @@ import Linker from '../universal-pkg/linker';
 import { UniversalPkg } from '../universal-pkg/dep/pkg';
 import versionImpl from '../universal-pkg/dep/version';
 import applyPlugins, { resolvePlugin } from '../plugin/applyPlugins';
-import { CommandPickConfig } from '../command-picker';
+import CommandPickConfig from '../command-picker/pickConfig';
 import { getURL } from '../../shared/url';
 import { copyDir } from '../../shared/fs';
 // import loggerReport from '../logger/report';

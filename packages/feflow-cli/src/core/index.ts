@@ -116,18 +116,25 @@ export default class Feflow {
 
     this.commandPick = new CommandPicker(this, cmd);
 
-    if (this.commandPick.isAvailable()) {
-      // should hit the cache in most cases
-      this.logger.debug('find cmd in cache');
-      this.commandPick.pickCommand();
-      await this.loadCommands(LOAD_DEVKIT);
-    } else {
-      // if not, load plugin/devkit/native in need
-      this.logger.debug('not find cmd in cache');
+    try {
+      if (this.commandPick.isAvailable()) {
+        // should hit the cache in most cases
+        this.logger.debug('find cmd in cache');
+        this.commandPick.pickCommand();
+        await this.loadCommands(LOAD_DEVKIT);
+      } else {
+        // if not, load plugin/devkit/native in need
+        this.logger.debug('this kind of command is not available in cache');
+        await this.loadCommands(this.commandPick.getLoadOrder());
+        // make sure the command has at least one funtion, otherwise replace to help command
+        this.commandPick.checkCommand();
+        this.commandPick.updateCache();
+      }
+    } catch(e) {
+      this.logger.debug('command picker got an error:', e);
       await this.loadCommands(this.commandPick.getLoadOrder());
-      // make sure the command has at least one funtion, otherwise replace to help command
-      this.commandPick.checkCommand();
     }
+
   }
 
   async initClient() {

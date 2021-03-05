@@ -62,7 +62,7 @@
   },
   "dependencies": {
     "@feflow/feflow-plugin-devtool": "^0.0.4",
-    "@feflow/report": "^0.4.0",
+    "@feflow/report": "^0.4.1",
     "abbrev": "^1.1.1",
     "axios": "^0.21.1",
     "bunyan": "^1.8.14",
