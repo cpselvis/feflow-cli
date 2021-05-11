@@ -1,5 +1,5 @@
 import chai from 'chai';
-const { httpRegex, sshRegex, getProjectByGit, getGitStatus, getSystemInfo } = require('../lib/common/utils');
+import { httpRegex, sshRegex, getProjectByGit, getGitStatus, getSystemInfo } from '../lib/common/utils';
 
 const expect = chai.expect;
 

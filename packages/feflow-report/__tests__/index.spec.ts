@@ -1,6 +1,6 @@
 import chai from 'chai';
-const Report = require('../lib/index');
-const { getUserName, httpRegex, sshRegex } = require('../lib/common/utils');
+import Report from '../lib/index';
+import { getUserName, httpRegex, sshRegex } from '../lib/common/utils';
 
 const expect = chai.expect;
 
@@ -8,24 +8,13 @@ describe('@feflow/report - report', () => {
   let report;
 
   before(() => {
-    report = new Report({});
+    report = new Report({ root: '/' });
   });
 
   it('getUserName() - username is not empty', () => {
     const username = getUserName();
 
     expect(username).to.not.empty;
-  });
-
-  it('getReportBody() ', () => {
-    const body = report.getReportBody('install', 'time/builder');
-
-    expect(body).to.not.empty;
-    expect(body.command).to.eq('install');
-    expect(body.user_name).to.not.empty;
-    expect(body.params).to.eq('time/builder');
-    expect(body.system_info).to.not.empty;
-    expect(body.project).to.eq('@feflow/report');
   });
 
   after(() => {
