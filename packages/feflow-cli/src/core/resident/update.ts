@@ -4,7 +4,7 @@ import semver from 'semver';
 import fs from 'fs';
 import path from 'path';
 import osenv from 'osenv';
-import DBInstance from '../../shared/db';
+import LockFileInstance from '../../shared/lockFile';
 import { install } from '../../shared/npm';
 import {
   UPDATE_COLLECTION,
@@ -12,7 +12,9 @@ import {
   UNIVERSAL_PKG_JSON,
   UNIVERSAL_MODULES,
   FEFLOW_BIN,
-  FEFLOW_LIB
+  FEFLOW_LIB,
+  UPDATE_KEY,
+  UPDATE_LOCK
 } from '../../shared/constant';
 import { setServerUrl } from '../../shared/git';
 import { parseYaml } from '../../shared/yaml';
@@ -40,6 +42,7 @@ interface VersionObj {
 interface ErrorInstance {
   name: string;
   message: string;
+  stack: string;
 }
 
 const { updateCli } = require('../native/upgrade');
@@ -58,7 +61,7 @@ const bin = path.join(root, FEFLOW_BIN);
 const lib = path.join(root, FEFLOW_LIB);
 const dbFile = path.join(root, UPDATE_COLLECTION);
 const universalPkg = new UniversalPkg(universalPkgPath);
-const db = new DBInstance(dbFile);
+const updateFile = new LockFileInstance(dbFile, UPDATE_LOCK);
 
 const logger = loggerInstance({
   debug: Boolean(debug),
@@ -82,9 +85,7 @@ const ctx = {
 let updateData: any;
 
 const handleException = (e: ErrorInstance): void => {
-  db.update('exception', `${e.name}: ${e.message}`).then(() => {
-    process.exit(1);
-  });
+  logger.error(`update_exception: ${e.name}: ${e.message} => ${e.stack}`);
 };
 
 (process as NodeJS.EventEmitter).on('uncaughtException', handleException);
@@ -102,7 +103,7 @@ function startUpdateCli() {
       };
       updateData['latest_cli_version'] = '';
     }
-    resolve();
+    resolve(undefined);
   });
 }
 
@@ -198,7 +199,9 @@ function checkUniversalPluginsUpdate() {
         // 记录更改项
         const pkgInfo = await getPkgInfo(ctx, `${pkg}@${version}`).catch(
           (e: string) => {
-            db.insertOnce('update_error', `${pkg}@${version}`, e);
+            logger.error(
+              `update_error => pkg: ${pkg}@${version} => error: ${e}`
+            );
           }
         );
         if (!pkgInfo) {
@@ -237,13 +240,14 @@ function checkUniversalPluginsUpdate() {
       updateData['universal_plugins_update_msg'] = updatePkg;
       updateData['latest_universal_plugins'] = '';
     }
-    resolve();
+    resolve(undefined);
   });
 }
 
-db.read('update_data')
+updateFile
+  .read(UPDATE_KEY)
   .then(data => {
-    updateData = data?.['value'];
+    updateData = data;
     return Promise.all([
       startUpdateCli(),
       checkPluginsUpdate(),
@@ -252,11 +256,11 @@ db.read('update_data')
   })
   .then(() => {
     updateData['update_lock'] = '';
-    db.update('update_data', updateData);
+    updateFile.update(UPDATE_KEY, updateData);
   })
   .catch((reason: any) => {
     updateData['update_lock'] = '';
-    db.update('update_data', updateData);
+    updateFile.update(UPDATE_KEY, updateData);
 
     logger.debug(reason);
     handleException(reason);

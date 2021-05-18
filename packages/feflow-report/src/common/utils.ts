@@ -36,6 +36,7 @@ const isGitAvailable = getGitStatus();
 const getUserNameFromHostName = () => {
   const hostname = os.hostname();
   const [upperUserName, ...device] = hostname.split('-');
+  if (upperUserName === 'MacBook') return '';
   return upperUserName.toLowerCase();
 };
 
@@ -60,7 +61,7 @@ const getUserNameFromGit = () => {
 export const getUserName = () => {
   // mac/window
   if (isMac || isWin) {
-    return getUserNameFromHostName() || getUserNameFromGit();
+    return getUserNameFromHostName() || getUserNameFromGit() || os.hostname();
   }
   return getUserNameFromLinux() || getUserNameFromGit() || getUserNameFromHostName();
 };

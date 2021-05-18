@@ -15,7 +15,8 @@ export function fileExit(filePath: string) {
     fs.appendFileSync(filePath, '', 'utf-8');
   }
 }
-export const getKeyFormFile = function (file: string, key: string) {
+// 文件中读取json对象的某个value
+export const getKeyFormFile = (file: string, key: string) => {
   try {
     const jsonString = fs.readFileSync(file, 'utf-8');
     if (jsonString) {
@@ -28,6 +29,7 @@ export const getKeyFormFile = function (file: string, key: string) {
     console.log('getKeyFormCache error =>', e);
   }
 };
+// 文件中写入一个json字符串
 export const setKeyToFile = (file: string, key: string, value: any): any => {
   try {
     const jsonString = fs.readFileSync(file, 'utf-8');

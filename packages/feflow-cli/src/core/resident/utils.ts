@@ -103,7 +103,10 @@ export const getUniversalPluginVersion = (pkgInfo: any, universalPkg: any) => {
     );
     if (pkgInfo.installVersion === LATEST_VERSION) {
       if (universalPkg.isInstalled(pkgInfo.repoName, LATEST_VERSION)) {
-        const currentVersion = await getCurrentTag(repoPath) || '';
+        const currentVersion = (await getCurrentTag(repoPath)) || '';
+        logger.debug(
+          `repoPath => ${repoPath}; currentVersion => ${currentVersion}; checkoutTag=> ${pkgInfo.checkoutTag}`
+        );
         if (versionImpl.gt(pkgInfo.checkoutTag, currentVersion)) {
           resolve({
             name: pkgInfo.repoName,

@@ -5,6 +5,7 @@ export function getURL(base: string, url: string): string {
   try {
     return new URL(url, base).href;
   } catch (e) {
+    console.debug(e);
     return '';
   }
 }

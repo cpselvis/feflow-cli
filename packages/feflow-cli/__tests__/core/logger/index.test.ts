@@ -1,7 +1,7 @@
 import path from 'path';
 import logger from '../../../src/core/logger';
-import osenv from "osenv";
-import {FEFLOW_ROOT, LOG_FILE} from "../../../src/shared/constant";
+import osenv from 'osenv';
+import { FEFLOW_ROOT, LOG_FILE } from '../../../src/shared/constant';
 import fs from 'fs';
 
 const LOGGER_LOG_PATH = path.join(osenv.home(), FEFLOW_ROOT, LOG_FILE);
@@ -46,8 +46,8 @@ describe('@feflow/core - Logger system', () => {
   });
 
   it('test no debug and silent', () => {
-    const log = logger({})
-    log.info('hello feflow')
+    const log = logger({});
+    log.info('hello feflow');
   });
 
   it('test debug', () => {

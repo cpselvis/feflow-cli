@@ -59,13 +59,13 @@ export const NPM_PLUGIN_INFO_JSON = 'npm-plugin-info.json';
 
 export const UNIVERSAL_README_CONFIG = 'README.md';
 
-export const CACHE_FILE = ".feflowCache.yml";
+export const CACHE_FILE = '.feflowCache.yml';
 
-export const HEART_BEAT_COLLECTION = 'heart-beat.db';
+export const HEART_BEAT_COLLECTION = 'heart-beat.json';
 
-export const HEART_BEAT_COLLECTION_LOG = 'heart-beat-log.db';
+export const HEART_BEAT_COLLECTION_LOG = 'heart_beat-log.db';
 
-export const UPDATE_COLLECTION = 'update.db';
+export const UPDATE_COLLECTION = 'update.json';
 
 export const BEAT_GAP = 5000;
 // 日志上报间隔
@@ -82,3 +82,15 @@ export const FEFLOW_PLUGIN_GIT_PREFIX = 'feflow-plugin-git-';
 export const FEFLOW_PLUGIN_PREFIX = 'feflow-plugin-';
 
 export const LOG_FILE = 'logger.log';
+
+export const BEAT_KEY = 'beat_time';
+
+export const BEAT_LOCK = 'heart-beat.lock';
+
+export const UPDATE_KEY = 'update_data';
+
+export const UPDATE_LOCK = 'update.lock';
+
+export const SILENT_ARG = '--slient';
+
+export const DISABLE_ARG = '--disable-check';

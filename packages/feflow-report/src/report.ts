@@ -32,6 +32,7 @@ function getReportBody(cmd, params): any {
     .load('system_info', systemInfo)
     .load('project', project)
     .load('status', REPORT_STATUS.START)
+    .load('node_version', process.version)
     .done();
 }
 

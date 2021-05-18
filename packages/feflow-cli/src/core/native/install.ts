@@ -1,7 +1,7 @@
 import { getRegistryUrl, install } from '../../shared/npm';
 import fs from 'fs';
 import path from 'path';
-import rp from 'request-promise';
+import axios from 'axios';
 import packageJson from '../../shared/packageJson';
 import {
   getTag,
@@ -18,7 +18,9 @@ import {
   INVALID_VERSION,
   FEFLOW_PLUGIN_GIT_PREFIX,
   FEFLOW_PLUGIN_PREFIX,
-  FEFLOW_PLUGIN_LOCAL_PREFIX
+  FEFLOW_PLUGIN_LOCAL_PREFIX,
+  SILENT_ARG,
+  DISABLE_ARG
 } from '../../shared/constant';
 import { Plugin } from '../universal-pkg/schema/plugin';
 import Linker from '../universal-pkg/linker';
@@ -29,6 +31,14 @@ import { CommandPickConfig } from '../command-picker';
 import { getURL } from '../../shared/url';
 import { copyDir } from '../../shared/fs';
 // import loggerReport from '../logger/report';
+interface PkgJson {
+  dependencies?: {
+    [key: string]: string;
+  };
+  devDependencies?: {
+    [key: string]: string;
+  };
+}
 
 async function getRepoInfo(ctx: any, packageName: string) {
   const serverUrl = ctx.config?.serverUrl;
@@ -36,17 +46,13 @@ async function getRepoInfo(ctx: any, packageName: string) {
   if (!url) {
     return Promise.reject('the serverUrl is invalid: ' + serverUrl);
   }
-  const options = {
-    url,
-    method: 'GET'
-  };
-  return rp(options)
-    .then((response: any) => {
-      const data = JSON.parse(response);
+  return axios.get(url)
+    .then(res => {
+      const data = res.data || {};
       return data.data && data.data[0];
     })
-    .catch((err: any) => {
-      ctx.logger.debug('Get repo info error', err);
+    .catch((e: any) => {
+      ctx.logger.debug('Get repo info error', e);
     });
 }
 
@@ -112,28 +118,67 @@ function isGitRepo(url: string): boolean {
 async function installNpmPlugin(ctx: any, ...dependencies: string[]) {
   const packageManager = ctx?.config?.packageManager;
   const registryUrl = await getRegistryUrl(packageManager);
+  let versionList: string[];
+  let needInstall: string[] = [];
   try {
-    await Promise.all(
-        dependencies.map(async (dependency: string) => {
-          try {
-            return await packageJson(dependency, registryUrl);
-          } catch (err) {
-            ctx.logger.error(`${dependency} not found on ${packageManager}, please check if it exists`);
-            process.exit(2);
-          }
-        })
+    versionList = await Promise.all(
+      dependencies.map(async (dependency: string) => {
+        try {
+          return await packageJson(dependency, registryUrl);
+        } catch (e) {
+          ctx.logger.error(`${dependency} not found on ${packageManager}, please check if it exists`);
+          ctx.logger.debug(e);
+          process.exit(2);
+        }
+      })
     );
-  } catch (e) {
-    ctx.logger.error(`get pkg info error ${JSON.stringify(e)}`);
+    const getCurversion = () => {
+      let json: PkgJson = {};
+      const installedPlugin = {};
+      try {
+        const data = fs.readFileSync(ctx.rootPkg, 'utf-8');
+        json = JSON.parse(data);
+      } catch (e) {
+        ctx.logger.error(`getCurversion error: ${JSON.stringify(e)}`);
+      }
+
+      if (!json.dependencies) {
+        return {};
+      }
+
+      const deps = json.dependencies || json.devDependencies || {};
+      Object.keys(deps).forEach((name) => {
+        if (!/^feflow-plugin-|^@[^/]+\/feflow-plugin-|^generator-|^@[^/]+\/generator-/.test(name)) {
+          return false;
+        }
+        installedPlugin[name] = deps[name];
+      });
+      return installedPlugin;
+    };
+    const hasInstallDep = getCurversion();
+    needInstall = dependencies.filter((dep, idx) => {
+      const depList = (dep || '').split('@');
+      const depName = !depList[0] ? `@${depList[1]}` : depList[0];
+      if (hasInstallDep[depName] !== versionList[idx]) {
+        return dep;
+      } else {
+        ctx.logger.info(
+          `[${dep}] has installed the latest version: ${hasInstallDep[depName]}`
+        );
+      }
+    });
+  } catch (err) {
+    ctx.logger.error(`get pkg info error ${JSON.stringify(err)}`);
   }
-
+  if (!needInstall.length) {
+    return Promise.resolve();
+  }
   ctx.logger.info('Installing packages. This might take a couple of minutes.');
-
   return install(
     packageManager,
     ctx.root,
     packageManager === 'yarn' ? 'add' : 'install',
-    dependencies,
+    needInstall,
     false,
     true
   ).then(() => {
@@ -187,7 +232,6 @@ async function installJsPlugin(ctx: any, installPlugin: string) {
   const isGlobal = ctx?.args['g'];
   // install js npm plugin
   await installNpmPlugin(ctx, installPlugin);
-
   // if install with option -g, register as global command
   if (
     isGlobal &&
@@ -266,7 +310,11 @@ async function startInstall(
   }
   if (pkgInfo.fromType !== PkgInfo.dir) {
     logger.info(`switch to version: ${pkgInfo.checkoutTag}`);
-    await checkoutVersion(repoPath, pkgInfo.checkoutTag, pkgInfo.lastCheckoutTag);
+    await checkoutVersion(
+      repoPath,
+      pkgInfo.checkoutTag,
+      pkgInfo.lastCheckoutTag
+    );
   }
 
   // deal dependencies
@@ -310,7 +358,10 @@ async function startInstall(
         curPkgInfo.repoName,
         curPkgInfo.installVersion
       );
-      const pluginPath = path.join(universalModules, `${curPkgInfo.repoName}@${curPkgInfo.installVersion}`);
+      const pluginPath = path.join(
+        universalModules,
+        `${curPkgInfo.repoName}@${curPkgInfo.installVersion}`
+      );
       const curPlugin = resolvePlugin(ctx, pluginPath);
       let useCommandName = commandName;
       // custom command name
@@ -325,7 +376,7 @@ async function startInstall(
         linker.register(
           pluginBin,
           pluginLib,
-          `${commandName}@${curPkgInfo.installVersion} --disable-check --slient`,
+          `${commandName}@${curPkgInfo.installVersion} ${DISABLE_ARG} ${SILENT_ARG}`,
           useCommandName
         );
       }
@@ -432,7 +483,7 @@ async function installPlugin(
   }
   // if the specified version is already installed, skip it
   if (
-    universalPkg.isInstalled(pkgInfo.repoName, pkgInfo.installVersion, !isGlobal)
+    universalPkg.isInstalled(pkgInfo.repoName, pkgInfo.checkoutTag, !isGlobal)
   ) {
     global && logger.info(`the current version is installed`);
     return;
@@ -535,7 +586,9 @@ async function getPkgInfo(
     let [pluginName, pluginVersion] = installPlugin.split('@');
     const repoInfo = await getRepoInfo(ctx, pluginName);
     if (!repoInfo) {
-      ctx.logger.warn('cant found message from Feflow Application market, please check if it exists');
+      ctx.logger.warn(
+        `cant found message about ${pluginName} from Feflow Application market, please check if it exists`
+      );
       return;
     }
     repoFrom = repoInfo.repo;
@@ -544,7 +597,7 @@ async function getPkgInfo(
       if (pluginVersion) {
         pluginVersion = versionImpl.toFull(pluginVersion);
         if (!versionImpl.check(pluginVersion)) {
-          throw `invalid version: ${pluginVersion}`;
+          throw `invalid version: ${pluginVersion} for ${pluginName}`;
         }
       }
       installVersion = pluginVersion || LATEST_VERSION;
@@ -757,7 +810,7 @@ module.exports = (ctx: any) => {
     try {
       await installPlugin(ctx, installPluginStr, true);
     } catch (e) {
-      ctx.logger.error(`install error: ${e}`);
+      ctx.logger.error(`install error: ${JSON.stringify(e)}`);
       process.exit(2);
     }
   });

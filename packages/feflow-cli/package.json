@@ -1,6 +1,6 @@
 {
   "name": "@feflow/cli",
-  "version": "0.23.2",
+  "version": "0.23.3",
   "description": "A front-end flow tool.",
   "main": "./lib/index.js",
   "directories": {
@@ -41,6 +41,7 @@
     "@types/figlet": "^1.2.0",
     "@types/inquirer": "^6.0.3",
     "@types/js-yaml": "^3.12.5",
+    "@types/lockfile": "^1.0.1",
     "@types/lodash": "^4.14.161",
     "@types/minimist": "^1.2.0",
     "@types/mocha": "^5.2.7",
@@ -62,7 +63,7 @@
   },
   "dependencies": {
     "@feflow/feflow-plugin-devtool": "^0.0.4",
-    "@feflow/report": "^0.4.3",
+    "@feflow/report": "^0.4.4",
     "abbrev": "^1.1.1",
     "axios": "^0.21.1",
     "bunyan": "^1.8.14",
@@ -77,11 +78,11 @@
     "inquire": "^0.4.8",
     "inquirer": "^6.5.0",
     "js-yaml": "^3.14.0",
+    "lockfile": "^1.0.4",
     "lodash": "^4.17.20",
     "lookpath": "^1.1.0",
     "marked": "^1.2.4",
     "minimist": "^1.2.0",
-    "nedb": "^1.8.0",
     "osenv": "^0.1.5",
     "package-json": "^6.5.0",
     "request": "^2.88.0",

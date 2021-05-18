@@ -6,7 +6,9 @@ import {
   UNIVERSAL_MODULES,
   UNIVERSAL_PLUGIN_CONFIG,
   FEFLOW_BIN,
-  FEF_ENV_PLUGIN_PATH
+  FEF_ENV_PLUGIN_PATH,
+  SILENT_ARG,
+  DISABLE_ARG
 } from '../../shared/constant';
 import Binp from '../universal-pkg/binp';
 import Commander from '../commander';
@@ -15,7 +17,7 @@ import { escape } from '../../shared/args';
 
 const toolRegex = /^feflow-(?:devkit|plugin)-(.*)/i;
 
-const excludeAgrs = ['--disable-check', '--slient'];
+const excludeAgrs = [DISABLE_ARG, SILENT_ARG];
 
 export function loadPlugin(
   ctx: any,
