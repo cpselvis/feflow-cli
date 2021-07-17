@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import spawn from 'cross-spawn';
 import { getRegistryUrl } from '../../shared/npm';
 import packageJson from '../../shared/packageJson';
@@ -5,6 +7,8 @@ import semver from 'semver';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { safeDump } from '../../shared/yaml';
+
+const { installPlugin, getPkgInfo } = require('./install');
 
 async function updateCli(packageManager: string) {
   return new Promise((resolve, reject) => {
@@ -84,8 +88,50 @@ async function checkCliUpdate(ctx: any) {
 }
 
 module.exports = (ctx: any) => {
-  ctx.commander.register('upgrade', 'upgrade fef cli', () => {
-    checkCliUpdate(ctx);
+  ctx.commander.register('upgrade', 'upgrade fef cli', async () => {
+    const dependencies = ctx.args['_'];
+    const npmPluginInfoPath = path.join(ctx.root, 'package.json');
+    const npmPluginInfoJson = fs.existsSync(npmPluginInfoPath)
+      ? require(npmPluginInfoPath)
+      : {};
+    if (dependencies.length) {
+      try {
+        // eslint-disable-next-line
+        for (const installPluginStr of dependencies) {
+          // 判断是 universalPkg 且已安装
+          const pkgInfo = await getPkgInfo(ctx, installPluginStr);
+          const { universalPkg } = ctx;
+          if (pkgInfo && universalPkg.isInstalled(pkgInfo.repoName)) {
+            await installPlugin(ctx, installPluginStr, true);
+            continue;
+          }
+
+          // 判断是 npmPlugin 且已安装
+          const splits = installPluginStr.split('@');
+          let [pluginName] = splits;
+          if (splits.length === 3) {
+            splits.pop();
+            pluginName = splits.join('@');
+          } else if (splits.length === 2) {
+            pluginName = installPluginStr;
+          }
+          if (npmPluginInfoJson?.dependencies?.[pluginName]) {
+            await installPlugin(ctx, installPluginStr, true);
+            continue;
+          }
+
+          ctx.logger.warn(
+            `${installPluginStr} is not installed, you need to install it before upgrade`
+          );
+        }
+      } catch (e) {
+        ctx.logger.error(`install error: ${e}`);
+        process.exit(2);
+      }
+    } else {
+      // 没有参数则更新 cli
+      checkCliUpdate(ctx);
+    }
   });
 };
 

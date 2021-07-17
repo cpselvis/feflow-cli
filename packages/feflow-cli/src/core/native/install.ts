@@ -686,13 +686,15 @@ async function uninstallUniversalPlugin(ctx: any, pluginName: string) {
   try {
     removeInvalidPkg(ctx);
     plugin?.postUninstall?.runLess();
-    logger.info('uninstall success');
+    logger.info(`uninstall success ${pluginName}`);
   } catch (e) {
-    logger.info(`uninstall succeeded, but failed to clean the data, ${e}`);
+    logger.info(
+      `uninstall ${pluginName} succeeded, but failed to clean the data, ${e}`
+    );
   }
 }
 
-async function uninstallNpmPlugin(ctx: any, dependencies: []) {
+async function uninstallNpmPlugin(ctx: any, dependencies: [] | [any]) {
   const {
     logger,
     root,
@@ -727,7 +729,8 @@ async function uninstallNpmPlugin(ctx: any, dependencies: []) {
     false,
     true
   ).then(() => {
-    ctx.logger.info('uninstall success');
+    const deps = dependencies.join(' ');
+    ctx.logger.info(`uninstall success ${deps}`);
   });
 }
 
@@ -804,16 +807,18 @@ async function updatePlugin(ctx: any, pkg: string, version: string) {
 module.exports = (ctx: any) => {
   ctx.commander.register('install', 'Install a devkit or plugin', async () => {
     const dependencies = ctx.args['_'];
-    const installPluginStr = dependencies[0];
-    if (!installPluginStr) {
+    if (!dependencies.length) {
       ctx.logger.error('parameter error');
       return;
     }
-    try {
-      await installPlugin(ctx, installPluginStr, true);
-    } catch (e) {
-      ctx.logger.error(`install error: ${JSON.stringify(e)}`);
-      process.exit(2);
+    // eslint-disable-next-line
+    for (const installPluginStr of dependencies) {
+      try {
+        await installPlugin(ctx, installPluginStr, true);
+      } catch (e) {
+        ctx.logger.error(`install error: ${JSON.stringify(e)}`);
+        process.exit(2);
+      }
     }
   });
 
@@ -822,6 +827,12 @@ module.exports = (ctx: any) => {
     'Uninstall a devkit or plugin',
     async () => {
       const dependencies = ctx.args['_'];
+      if (!dependencies.length) {
+        ctx.logger.error(
+          'parameter error, you need to specify specify the plugins'
+        );
+        return;
+      }
       ctx.logger.info(
         'Uninstalling packages. This might take a couple of minutes.'
       );
@@ -830,16 +841,17 @@ module.exports = (ctx: any) => {
         return uninstallNpmPlugin(ctx, dependencies);
       }
       const { universalPkg } = ctx;
-      const installPluginStr = dependencies[0];
-      const pkgInfo = await getPkgInfo(ctx, installPluginStr);
-      if (pkgInfo && universalPkg.isInstalled(pkgInfo.repoName)) {
-        return uninstallUniversalPlugin(ctx, pkgInfo.repoName);
-      }
-
-      await uninstallNpmPlugin(ctx, dependencies);
-
       const pickerConfig = new CommandPickConfig(ctx);
-      pickerConfig.removeCache(dependencies[0]);
+      // eslint-disable-next-line
+      for (const installPluginStr of dependencies) {
+        const pkgInfo = await getPkgInfo(ctx, installPluginStr);
+        if (pkgInfo && universalPkg.isInstalled(pkgInfo.repoName)) {
+          await uninstallUniversalPlugin(ctx, pkgInfo.repoName);
+        } else {
+          await uninstallNpmPlugin(ctx, [installPluginStr]);
+        }
+        pickerConfig.removeCache(installPluginStr);
+      }
     }
   );
 };
